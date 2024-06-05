@@ -1,35 +1,7 @@
 const express = require('express')
 const app = express()
 const port = 3001
-
-const data = [
-    { "date": "2024-03-03", "amount": 90 },
-    { "date": "2024-03-15", "amount": 130 },
-    { "date": "2024-03-22", "amount": 70 },
-    { "date": "2024-03-28", "amount": 180 },
-    { "date": "2024-04-04", "amount": 160 },
-    { "date": "2024-04-07", "amount": 110 },
-    { "date": "2024-04-09", "amount": 30 },
-    { "date": "2024-04-12", "amount": 80 },
-    { "date": "2024-04-14", "amount": 160 },
-    { "date": "2024-04-07", "amount": 110 },
-    { "date": "2024-04-21", "amount": 100 },
-    { "date": "2024-04-29", "amount": 220 },
-    { "date": "2024-05-01", "amount": 30 },
-    { "date": "2024-05-05", "amount": 140 },
-    { "date": "2024-05-07", "amount": 70 },
-    { "date": "2024-05-12", "amount": 190 },
-    { "date": "2024-05-18", "amount": 40 },
-    { "date": "2024-05-20", "amount": 130 },
-    { "date": "2024-05-05", "amount": 110 },
-    { "date": "2024-05-28", "amount": 240 },
-    { "date": "2024-05-29", "amount": 10 },
-    { "date": "2024-05-30", "amount": 120 },
-    { "date": "2024-06-01", "amount": 120 },
-    { "date": "2024-06-01", "amount": 150 },
-    { "date": "2024-06-02", "amount": 80 },
-    { "date": "2024-06-03", "amount": 200 },
-]
+const {data, users} =  require("./data")
 
  const calculateRewards = (amount) => {
     if (amount > 100) {
@@ -77,6 +49,12 @@ const data = [
     });
     return {monthlyRewards, totalRewards, currentMonthRewards};
   }
+
+  const calculateUserRewards = (id) => {
+    const userDetails = data.filter((x) => x.userID === id)
+    return calculateTotalRewards(userDetails[0].transaction, 'All', true)
+  }
+
 app.use(function(req, res, next) {
     res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
     res.header(
@@ -86,12 +64,24 @@ app.use(function(req, res, next) {
     next();
   });
 
-app.get('/api/home', (req, res) => {
+app.get('/api/getDetails/:id', (req, res) => {
     let response = {}
     const {sort} = req.query
-    response.transaction = getFilteredData(data, sort).reverse()
-    response.rewards = calculateTotalRewards(data, sort, true)
+    const {id} = req.params
+    const filteredData = data.filter((x) => x.userID === id)[0].transaction
+    response.transaction = getFilteredData(filteredData, sort).reverse()
+    response.rewards = calculateTotalRewards(filteredData, sort, true)
     res.send(response)
+})
+
+app.get('/api/users', (req, res) => {
+  let response  = []
+  users.map((user) => {
+    let temp = user
+    temp['totalRewards'] = calculateUserRewards(user.userID).totalRewards
+    response.push(temp)
+  })
+  res.send(response)
 })
 
 app.get('/', (req, res) => {
